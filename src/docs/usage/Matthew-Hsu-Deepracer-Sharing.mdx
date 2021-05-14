@@ -1,0 +1,151 @@
+---
+title: Matthew Hsu Deepracer Sharing
+description: Matthew Hsu sharing his Deepracer training experience
+---
+
+Reinvent 2019 賽道
+
+action space
+```
+{
+    "action_space": [
+        {
+            "steering_angle": -21,
+            "speed": 3.5
+        },
+        {
+            "steering_angle": -14,
+            "speed": 3.5
+        },
+        {
+            "steering_angle": -7,
+            "speed": 3.5
+        },
+        {
+            "steering_angle": 0,
+            "speed": 3.5
+        },
+        {
+            "steering_angle": 7,
+            "speed": 3.5
+        },
+        {
+            "steering_angle": 14,
+            "speed": 3.5
+        },
+        {
+            "steering_angle": 21,
+            "speed": 3.5
+        },
+        {
+            "steering_angle": -21,
+            "speed": 1.6
+        },
+        {
+            "steering_angle": -14,
+            "speed": 1.6
+        },
+        {
+            "steering_angle": -7,
+            "speed": 1.6
+        },
+        {
+            "steering_angle": 0,
+            "speed": 1.6
+        },
+        {
+            "steering_angle": 7,
+            "speed": 1.6
+        },
+        {
+            "steering_angle": 14,
+            "speed": 1.6
+        },
+        {
+            "steering_angle": 21,
+            "speed": 1.6
+        }
+    ],
+    "sensor": ["FRONT_FACING_CAMERA"],
+    "neural_network": "DEEP_CONVOLUTIONAL_NETWORK_SHALLOW",
+    "training_algorithm": "clipped_ppo",
+    "action_space_type": "discrete",
+    "version": "3"
+}
+```
+
+
+1) 先用default reward function, default hyperparameter train 5小時
+```
+def reward_function(params):
+    '''
+    Example of rewarding the agent to follow center line
+    '''
+    
+    # Read input parameters
+    track_width = params['track_width']
+    distance_from_center = params['distance_from_center']
+    
+    # Calculate 3 markers that are at varying distances away from the center line
+    marker_1 = 0.1 * track_width
+    marker_2 = 0.25 * track_width
+    marker_3 = 0.5 * track_width
+    
+    # Give higher reward if the car is closer to center line and vice versa
+    if distance_from_center <= marker_1:
+        reward = 1.0
+    elif distance_from_center <= marker_2:
+        reward = 0.5
+    elif distance_from_center <= marker_3:
+        reward = 0.1
+    else:
+        reward = 1e-3  # likely crashed/ close to off track
+    
+    return float(reward)
+
+```
+
+
+
+2) 更改hyperparameter 中的 lr(learning rate) = 0.00003, train 10小時
+直至model能多次完成一圈為至
+
+
+3) 更改reward function 如下, 更改lr(learning rate) = 0.0003,train5小時
+```
+def reward_function(params):
+    # Read input parameters
+    high = [[10,80],[100,140]]
+    
+    steering_angle =params['steering_angle']
+    steering = abs(params['steering_angle'])
+    waypoints = params['waypoints']
+    
+    heading = params['heading']
+    is_left_of_center = params['is_left_of_center']
+
+    closest_waypoints = params['closest_waypoints']
+    speed = params['speed']
+    track_width = params['track_width']
+    distance_from_center = params['distance_from_center']
+    all_wheels_on_track = params['all_wheels_on_track']
+
+    reward = 1e-3
+
+    inHigh = False
+    if closest_waypoints[0] > high[0][0] and closest_waypoints[0] < high[0][1]:
+        inHigh = True
+    elif closest_waypoints[0] > high[1][0] and closest_waypoints[0] < high[1][1]:
+        inHigh = True
+    
+    if speed > 2.0 and inHigh:
+        reward = 1.0
+    elif speed < 2.0 and not inHigh:
+        reward = 1.0
+    
+    return float(reward)
+```
+
+
+
+4) 更改hyperparameter 中的 lr(learning rate) = 0.00003, train 10小時

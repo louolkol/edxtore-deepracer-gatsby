@@ -1,0 +1,206 @@
+---
+title: Training and verification
+description: Teach you how to train a model and verify the training result.
+---
+
+## Select track
+改run.ev
+![](https://i.imgur.com/f3NCZRD.png)
+
+```
+dr-update
+```
+你可以debug jupyter notebook check下有咩track
+![](https://i.imgur.com/E0cFGAY.png)
+有啲係冇_track字尾既,請留意
+
+
+有啲track名好奇怪
+例如
+![](https://i.imgur.com/lH7OYQA.png)
+Penboy_open 其實就係Po-Chun Speedway(3月deepracer league 地圖)
+
+
+## Path of the reward function
+
+
+```
+nano ~/deepracer-for-cloud/data/minio/bucket/custom_files/reward_function.py
+```
+
+
+![](https://i.imgur.com/F1m4mi3.png)
+
+健議先在IDE打好code,再貼上
+![](https://i.imgur.com/mJF6wXA.png)
+
+用```ctrl + shift + 6 ```
+之後按上或者下鍵去select曬,之後```ctrl k```去delete走舊有既code,再貼上新既code
+
+reward function出錯後,其不會有error提示,但sagemaker將會無法打開,所以如果怕reward funtion打錯的話,你可以預先將code貼至AWS Deepracer console中作validation.(不會計費)
+![](https://i.imgur.com/t05KfVN.png)
+
+
+
+
+
+
+改完reward function後,你需要行
+```
+dr-increment-training
+```
+![](https://i.imgur.com/tMVNMiE.png)
+這句command,讓Deepracer 知道你要訓練的model是建基於那個model去接續訓練下去的
+
+之後便可以開始training.
+```
+dr-start-training
+```
+
+
+
+
+
+
+改錯的話,可以用呢句command,佢會整返堆default既action space,reward funciton, hyperparameter比你
+```
+dr-upload-custom-files
+```
+
+
+## Path of Checkpoints 
+你可以cd到個model,知道佢training左幾多個checkpoints了
+```
+cd ~/deepracer-for-cloud/data/minio/bucket/<model>
+```
+![](https://i.imgur.com/bg3re3c.png)
+
+
+## Log
+### log for reward function
+你可以於reward function中出以print的形式去幫你的reward function作debug
+例如你未知default function中,steering angle的reward徵罰有冇效.
+![](https://i.imgur.com/zkbXOfn.png)
+
+
+training的時候你可以```ctrl c```離開sagemaker log stream
+
+再用此command,進入robomaker logs stream
+```
+dr-logs-robomaker
+```
+
+![](https://i.imgur.com/bub7RwR.png)
+
+
+
+
+### log analysis
+command 去開本jupyter notebook比你log analysis
+```
+dr-start-loganalysis
+```
+點佢生成最低呢個既條link
+![](https://i.imgur.com/lWEt5Oh.png)
+copy這條link改返正確ip之後,你可以用你local browser連
+![](https://i.imgur.com/HCoERFn.png)
+
+
+改一改返呢道個path
+![](https://i.imgur.com/ECtxE8g.png)
+唔需要理會robomaker log not available
+
+改返你training既賽道名落去
+![](https://i.imgur.com/BwJcYyO.png)
+
+以下兩幅是log analysis較有用的圖
+
+trainingy過程中獲得最高reward的路線圖
+![](https://i.imgur.com/eLErjgT.png)
+reward 分怖圖,車子係那些位置攞得愈多reward,那個地方亮度就愈高
+![](https://i.imgur.com/SSlViIS.png)
+
+
+
+## How to upload the model to AWS Deepracer console
+
+無法直接upload到Deepracer console,要先upload到s3 bucket中.再自己手動從s3 bucket upload到Deepracer console
+
+首先改System.env, 去等你佢知,你想佢upload 係邊個bucket
+```
+nano system.env
+```
+![](https://i.imgur.com/xOqSt8v.png)
+```
+dr-update
+```
+
+更新返個aws access key 那些,等佢有credential去upload.
+```
+aws configure
+```
+入返access key,secret key, region 需要跟s3 bucket region相同
+
+
+選攞到最高 reward的那個checkpoint去upload
+```
+dr-upload-model -b
+```
+![](https://i.imgur.com/0kDJeyP.png)
+
+upload返個model到deepracer
+![](https://i.imgur.com/7bDzUjV.png)
+![](https://i.imgur.com/5UM0rYN.png)
+![](https://i.imgur.com/WUU730w.png)
+
+你可攞佢黎evaluation或者再clone黎train都可以
+
+
+## How to generate AWS credential
+到AWS 的IAM service
+
+點add user
+![](https://i.imgur.com/v8wmGHS.png)
+
+打名及選programmatic access
+![](https://i.imgur.com/IFfVQLx.png)
+
+
+![](https://i.imgur.com/QOXJTti.png)
+
+skip其他
+
+![](https://i.imgur.com/3GdCIN4.png)
+請download並保存好csv
+
+
+## Change model metadata
+
+更改model metadata,即是model的action space.
+
+需要注意的是,更改model metadata for incremantal training時,action space的選項數量不能增加或減小,只能更改原有action space的數值,因為神經網絡中action layer是於model最初建立時一同生成,後期加入的額外action space, model都將無法選擇.
+
+
+```
+nano data/minio/bucket/custom_files/model_metadata.json
+```
+
+
+![](https://i.imgur.com/3lkdgzk.png)
+按```PgUp```键 移動至文件的最左上,再按```Alt + T ```去移除整份code.
+
+再貼上你要更改成的model metadata
+
+save完之後,離開file.
+
+
+更新pretrain model,讓Deepracer知道用那個model接續train下去
+```
+dr-increment-training
+```
+
+
+再開始training
+```
+dr-start-training
+```

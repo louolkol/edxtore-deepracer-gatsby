@@ -1,0 +1,19 @@
+# Sidebar navigation
+
+- label: 'Training Server Setup'
+  link: '/usage/training-server-setup'
+
+- label: 'Training and Verification'
+  link: '/usage/training-and-verification'
+
+- label: Samples
+  items:
+    - label: 'Matthew Hsu Deepracer Sharing'
+      link: '/usage/Matthew-Hsu-Deepracer-Sharing'
+    - label: 'Useful reward function'
+      link: '/usage/reward-function'
+
+- label: More
+  items:
+    - label: Edxtore
+      link: https://www.edxtore.com/

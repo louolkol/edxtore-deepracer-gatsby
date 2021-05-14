@@ -1,0 +1,113 @@
+---
+title: Useful reward function
+description: some useful reward function template
+---
+
+
+
+## Steps
+![](https://i.imgur.com/lzL3c8B.png)
+
+原理: 車子每次接收影像訊息並作出動作稱為完成一個step,車子完成step的速度不變(10 steps/ second),因為得知steps的完成數量亦可得知車子在賽道的時間, 透過得比較完成百份比,得知車子行駛表現,以愈小step行駛愈大百份比,reward則愈高.
+
+作用: 能鼓勵車子一直探索更短的路線去完成賽道
+```
+def reward_function(params):
+
+    # Read input variable
+    steps = params['steps']
+    progress = params['progress']
+
+    # Total num of steps we want the car to finish the lap, it will vary depends on the track length
+    TOTAL_NUM_STEPS = 300
+
+    # Initialize the reward with typical value
+    reward = 1.0
+
+    # Give additional reward if the car pass every 100 steps faster than expected
+    if (steps % 100) == 0 and progress > (steps / TOTAL_NUM_STEPS) * 100 :
+        reward += 10.0
+
+    return float(reward)
+```
+
+注意事項: 對車子的指引不明確,車子表現不穩定,完成一圈的機會下降,就好比沒有給予學生批改後的考卷,只給予最終評分,令學生難以針對性改善.
+
+
+
+
+
+## Follow path direction
+![](https://i.imgur.com/hgEiNTU.png)
+
+
+
+原理: 利用賽道checkpoint的xy坐標,配合數學function, 計算車子當時所在checkpoint旳最佳方向角度,當車子方向與最佳角度相差角度大於某個數,則予以reward懲罰.
+
+作用: 讓車子主要跟随賽道方向,而非賽道線本身,可以利用這個特性來訓練車子更貼近賽道內圈並且往正確方向行駛
+```
+def reward_function(params):
+
+    waypoints = params['waypoints']
+    closest_waypoints = params['closest_waypoints']
+    heading = params['heading']
+    reward = 1.0
+    
+    next_point = waypoints[closest_waypoints[1]]
+    prev_point = waypoints[closest_waypoints[0]]
+    track_direction = math.atan2(next_point[1] - prev_point[1], next_point[0] - prev_point[0]) 
+    track_direction = math.degrees(track_direction)
+    direction_diff = abs(track_direction - heading)
+    
+    if direction_diff > 180:
+        direction_diff = 360 - direction_diff
+    DIRECTION_THRESHOLD = 10.0
+    if direction_diff > DIRECTION_THRESHOLD:
+        reward *= 0.5
+        
+    return reward
+```
+注意事項: 車子於過灣位位置往往難以與賽道保持方向,車子或許會放棄過灣的reward,令過灣表現不佳
+
+https://github.com/VilemR/AWS_DeepRacer
+
+## Penalize changes in speed and steering
+![](https://i.imgur.com/QVZzaxY.png)
+
+原理: 以global variable記錄上一個車子的step動作, 對比當下step的動作, 如果動作不同則減少reward的獲得.
+
+作用: 從而令車子減少不必要的轉換, 可避免不停轉換action的情況出現,例如zigzag或者不停變速等問題
+``` 
+def reward_function(params):
+
+    speed = params['speed']
+    steering_angle =params['steering_angle']
+    steering = abs(params['steering_angle'])
+    
+        # Penalize changes in speed
+    global prev_speed
+    speed_changed = False
+    try:
+        if prev_speed != speed:
+            speed_changed = True
+    except:
+        prev_speed = speed
+
+    # Penalize changes in steering angle
+    global prev_steering_angle
+    steering_angle_changed = False
+    try:
+        if prev_steering_angle != steering_angle:
+            steering_angle_changed = True
+    except:
+        prev_steering_angle = steering_angle
+
+    prev_steering_angle = steering_angle    
+
+    if speed_changed or steering_angle_changed:
+        reward *= 0.6
+        
+    return float(reward)
+```
+
+注意事項: 懲罰車子動作改變的情況,車子行駛方式改變將減少,嘗試各種變化可能亦因此減少,訓練需時將會延長,所以訓練效果較不顯著

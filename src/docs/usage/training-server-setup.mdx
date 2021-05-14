@@ -1,0 +1,89 @@
+---
+title: Training server setup
+description: Teach you how to setup a server for deepracer training
+---
+
+## Setup Deepracer local 
+
+OS 要求為ubuntu 18.04 desktop或者ubuntu 20.04 desktop
+如果係sangfor VM機就要選這個
+![](https://i.imgur.com/qUDKvqG.png)
+不然虛擬CPU會太舊無法運行Tensorflow
+
+
+
+
+```
+sudo -i
+apt update
+apt install git
+apt install curl
+
+apt install apt-transport-https
+apt install ca-certificates
+apt install gnupg
+apt install lsb-release
+```
+
+```
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+git clone https://github.com/aws-deepracer-community/deepracer-for-cloud.git
+```
+
+
+安裝前置準備,包括安裝gpu driver, docker,aws cli
+```
+cd deepracer-for-cloud && ./bin/prepare.sh
+```
+之後需要reboot
+```
+reboot
+```
+
+set minio既profile,因為佢要起minio server,之後你係用呢組credential 去access你個minio server既
+```aws configure --profile minio```
+
+
+呢句command會幫你上docker hub下載返 robomaker,sagemaker,deepracer所需既docker image
+```
+cd deepracer-for-cloud
+
+./bin/init.sh -c local -a cpu
+
+./bin/init.sh -c local -a gpu [具gpu的可改用些command]
+```
+
+行scripts 去啟動Deepracer command
+```
+source bin/activate.sh
+```
+
+```
+nano run.env
+```
+![](https://i.imgur.com/REHyL4E.png)
+
+```
+dr-update
+```
+
+
+```
+dr-start-training
+```
+
+## Activate Deepracer command
+
+
+每次要使用Deepracer command 都要先行script啟動command
+```
+cd deepracer-for-cloud
+```
+
+```
+source bin/activate.sh
+```
+更多Deepracer command:
+https://aws-deepracer-community.github.io/deepracer-for-cloud/reference.html
