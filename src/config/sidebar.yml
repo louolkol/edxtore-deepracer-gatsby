@@ -9,9 +9,11 @@
 - label: Samples
   items:
     - label: 'Matthew Hsu Deepracer Sharing'
-      link: '/usage/Matthew-Hsu-Deepracer-Sharing'
+      link: '/usage/matthew-hsu-deepracer-sharing'
     - label: 'Useful reward function'
       link: '/usage/reward-function'
+    - label: '2021 May Qualifier races open division'
+      link: '/usage/daas-dda-track'
 
 - label: More
   items:

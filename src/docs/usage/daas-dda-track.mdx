@@ -1,10 +1,13 @@
 ---
-title: Matthew Hsu Deepracer Sharing
-description: Matthew Hsu sharing his Deepracer training experience
+title: 2021 May Qualifier races open division 
+description: Deepracer.
 ---
+Track
 
-Reinvent 2019 賽道
-![](https://i.imgur.com/UHgxcgq.png)
+![](https://i.imgur.com/b6YAuwY.png)
+
+edxtore成積
+![](https://i.imgur.com/EkxwkJh.png)
 
 action space
 ```
@@ -12,31 +15,31 @@ action space
     "action_space": [
         {
             "steering_angle": -21,
-            "speed": 3.5
+            "speed": 3
         },
         {
             "steering_angle": -14,
-            "speed": 3.5
+            "speed": 3
         },
         {
             "steering_angle": -7,
-            "speed": 3.5
+            "speed": 3
         },
         {
             "steering_angle": 0,
-            "speed": 3.5
+            "speed": 3
         },
         {
             "steering_angle": 7,
-            "speed": 3.5
+            "speed": 3
         },
         {
             "steering_angle": 14,
-            "speed": 3.5
+            "speed": 3
         },
         {
             "steering_angle": 21,
-            "speed": 3.5
+            "speed": 3
         },
         {
             "steering_angle": -21,
@@ -65,6 +68,34 @@ action space
         {
             "steering_angle": 21,
             "speed": 1.6
+        },
+        {
+            "steering_angle": -21,
+            "speed": 0.8
+        },
+        {
+            "steering_angle": -14,
+            "speed": 0.8
+        },
+        {
+            "steering_angle": -7,
+            "speed": 0.8
+        },
+        {
+            "steering_angle": 0,
+            "speed": 0.8
+        },
+        {
+            "steering_angle": 7,
+            "speed": 0.8
+        },
+        {
+            "steering_angle": 14,
+            "speed": 0.8
+        },
+        {
+            "steering_angle": 21,
+            "speed": 0.8
         }
     ],
     "sensor": ["FRONT_FACING_CAMERA"],
@@ -74,8 +105,6 @@ action space
     "version": "3"
 }
 ```
-
-
 1) 先用default reward function, default hyperparameter train 5小時
 ```
 def reward_function(params):
@@ -103,25 +132,30 @@ def reward_function(params):
         reward = 1e-3  # likely crashed/ close to off track
     
     return float(reward)
-
 ```
 
+2) 更改hyperparameter 中的 lr(learning rate) = 0.00003, train 10小時 直至model能多次完成一圈為至
 
 
-2) 更改hyperparameter 中的 lr(learning rate) = 0.00003, train 10小時
-直至model能多次完成一圈為至
+賽道waypoint
+![](https://i.imgur.com/fk1Cuak.png)
 
 
 3) 更改reward function 如下, 更改lr(learning rate) = 0.0003,train5小時
+
+
+
 ```
+import math
 def reward_function(params):
     # Read input parameters
-    high = [[10,80],[100,140]]
+    Low = [36,44]
     
+    steering_angle =params['steering_angle']
     steering_angle =params['steering_angle']
     steering = abs(params['steering_angle'])
     waypoints = params['waypoints']
-    
+
     heading = params['heading']
     is_left_of_center = params['is_left_of_center']
 
@@ -133,19 +167,60 @@ def reward_function(params):
 
     reward = 1e-3
 
-    inHigh = False
-    if closest_waypoints[0] > high[0][0] and closest_waypoints[0] < high[0][1]:
-        inHigh = True
-    elif closest_waypoints[0] > high[1][0] and closest_waypoints[0] < high[1][1]:
-        inHigh = True
+    inLow = False
+    if closest_waypoints[0] > Low[0] and closest_waypoints[0] < Low[1]:
+        inLow = True
+
     
-    if speed > 2.0 and inHigh:
+    if inLow and is_left_of_center == False:
+        reward = 2.0
+    elif inLow:
         reward = 1.0
-    elif speed < 2.0 and not inHigh:
+    elif speed > 1.4 and not inLow:
         reward = 1.0
+    elif speed > 2 and not inLow:
+        reward = 3
+
+    # Penalize changes in speed
+    global prev_speed
+    speed_changed = False
+    try:
+        if prev_speed != speed:
+            speed_changed = True
+    except:
+        prev_speed = speed
+
+    # Penalize changes in steering angle
+    global prev_steering_angle
+    steering_angle_changed = False
+    try:
+        if prev_steering_angle != steering_angle:
+            steering_angle_changed = True
+    except:
+        prev_steering_angle = steering_angle
+
+    prev_steering_angle = steering_angle    
+
+    if speed_changed or steering_angle_changed:
+        reward *= 0.4
     
+    
+    next_point = waypoints[closest_waypoints[1]]
+    prev_point = waypoints[closest_waypoints[0]]
+    track_direction = math.atan2(next_point[1] - prev_point[1], next_point[0] - prev_point[0]) 
+    track_direction = math.degrees(track_direction)
+    direction_diff = abs(track_direction - heading)
+    
+    if direction_diff > 180:
+        direction_diff = 360 - direction_diff
+    DIRECTION_THRESHOLD = 10.0
+    if direction_diff > DIRECTION_THRESHOLD:
+        reward *= 0.6
+
+
     return float(reward)
 ```
 
-
 4) 更改hyperparameter 中的 lr(learning rate) = 0.00003, train 10小時
+
+
